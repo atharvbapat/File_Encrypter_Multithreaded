@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <semaphore.h>
 #include "./Cryption/Cryption.hpp"
+#include <thread>
 
 ProcessManagement::ProcessManagement() {
     itemsSemaphore = sem_open("/items_semaphore", O_CREAT, 0666, 0);
@@ -65,42 +66,63 @@ bool ProcessManagement::submitToQueue(std::unique_ptr<Task> task) {
     lock.unlock();
     sem_post(itemsSemaphore);
 
-    int pid = fork();
-    if (pid < 0) {
-        perror("fork failed");
-        return false;
-    } else if (pid > 0) {
-        std::cout << "Entering the parent process" << std::endl;
-    } else {
-        std::cout << "Entering the child process" << std::endl;
-        executeTasks();
-        std::cout << "Exiting the child process" << std::endl;
-        exit(0);
-    }
+    // multiprocessing forking child processes
+    // int pid = fork();
+    // if (pid < 0) {
+    //     perror("fork failed");
+    //     return false;
+    // } else if (pid > 0) {
+    //     std::cout << "Entering the parent process" << std::endl;
+    // } else {
+    //     std::cout << "Entering the child process" << std::endl;
+    //     executeTasks();
+    //     std::cout << "Exiting the child process" << std::endl;
+    //     exit(0);
+    // }
+
+    //multithreading
+    std::thread thread_1(&ProcessManagement::executeTasks,this);
+    thread_1.detach();  //oposite to join dont wait, execute others
+
 
     return true;
 }
 
+
+//multithreading
 void ProcessManagement::executeTasks() {
     sem_wait(itemsSemaphore);
     std::unique_lock<std::mutex> lock(queueLock);
-
     char taskStr[256];
     strcpy(taskStr, sharedMem->tasks[sharedMem->front]);
     sharedMem->front = (sharedMem->front + 1) % 1000;
     sharedMem->size.fetch_sub(1);
-
-    lock.unlock();
     sem_post(emptySlotsSemaphore);
-
-    std::cout << "Executing child process" << std::endl;
-
-    if (strlen(taskStr) == 0) {
-        throw std::runtime_error("Invalid task data");
-    }
-
     executeCryption(taskStr);
+    lock.unlock(); 
 }
+
+//multiprocessing
+// void ProcessManagement::executeTasks() {
+//     sem_wait(itemsSemaphore);
+//     std::unique_lock<std::mutex> lock(queueLock);
+
+//     char taskStr[256];
+//     strcpy(taskStr, sharedMem->tasks[sharedMem->front]);
+//     sharedMem->front = (sharedMem->front + 1) % 1000;
+//     sharedMem->size.fetch_sub(1);
+
+//     lock.unlock();
+//     sem_post(emptySlotsSemaphore);
+
+//     std::cout << "Executing child process" << std::endl;
+
+//     if (strlen(taskStr) == 0) {
+//         throw std::runtime_error("Invalid task data");
+//     }
+
+//     executeCryption(taskStr);
+// }
 
 ProcessManagement::~ProcessManagement() {
     if (munmap(sharedMem, sizeof(SharedMemory)) == -1) {
