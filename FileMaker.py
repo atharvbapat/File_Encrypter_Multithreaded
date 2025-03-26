@@ -21,7 +21,7 @@ def generate_random_content():
         content.append(" ".join(paragraph))
     return "\n\n".join(content)
 
-def create_test_files(directory="test", num_files=100):
+def create_test_files(directory="test", num_files=2000):
     os.makedirs(directory, exist_ok=True)
     for i in range(num_files):
         filename = f"file_{i + 1}.txt"

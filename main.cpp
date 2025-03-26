@@ -2,11 +2,13 @@
 #include <filesystem>
 #include <iomanip>
 #include <ctime>
+#include<chrono>
 #include "./process/ProcessManager.hpp"
 #include "./process/Task.hpp"
 #include "./Input/IO.hpp"
 
 namespace fs = std::filesystem;
+using namespace std::chrono;
 
 std::string getCurrentTimeString() {
     
@@ -31,6 +33,9 @@ int main(int argc, char* argv[]) {
         if (fs::exists(directory) && fs::is_directory(directory)) {
             ProcessManagement processManagement;
 
+            auto start_time = high_resolution_clock::now();
+
+
             for (const auto& entry : fs::recursive_directory_iterator(directory)) {
                 if (entry.is_regular_file()) {
                     std::string filePath = entry.path().string();
@@ -53,6 +58,10 @@ int main(int argc, char* argv[]) {
             }
 
             processManagement.executeTasks();
+
+            auto end_time = high_resolution_clock::now();
+            auto duration = duration_cast<milliseconds>(end_time - start_time);
+            std::cout << duration.count() << std::endl;
         } else {
             std::cout << "Invalid directory path!" << std::endl;
         }

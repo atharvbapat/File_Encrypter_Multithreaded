@@ -58,7 +58,7 @@ bool ProcessManagement::submitToQueue(std::unique_ptr<Task> task) {
         return false;
     }
 
-    std::cout << "Parent process writing task: " << task->toString() << std::endl;
+    // std::cout << "Parent process writing task: " << task->toString() << std::endl;
     strcpy(sharedMem->tasks[sharedMem->rear], task->toString().c_str());
     sharedMem->rear = (sharedMem->rear + 1) % 1000;
     sharedMem->size.fetch_add(1);
